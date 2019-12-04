@@ -1,0 +1,4 @@
+{
+    "db": "mongodb://localhost/gamestore",
+    "myKey": "86198652"
+}
