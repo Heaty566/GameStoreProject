@@ -4,6 +4,7 @@ const Joi = require('joi');
 const _ = require('lodash');
 const bcrypt = require('bcrypt');
 const express = require('express');
+const config = require('config');
 const router = express.Router();
 const {User} = require("../models/user-model");
 
@@ -11,14 +12,15 @@ router.post('/', async (req, res) => {
     const {error} = validate(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
-    const user = await User.find( _.pick(req.body, ["userName"]));
+    const user = await User.findOne( _.pick(req.body, ["userName"]));
     if (!user) return res.status(400).send("Invalid username or password");
-    console.log(user);
-    console.log(req.body);
-    const validatePassword = bcrypt.compare(req.body.password, user.password);
+
+    const validatePassword = await bcrypt.compare(req.body.password, user.password);
     if (!validatePassword) return res.status(400).send("Invalid username or password");
 
-    res.send(user);
+    const token = getToken(user);
+
+    res.status(200).header("x-auth-token", token).send(user);
 });
 
 
@@ -30,6 +32,11 @@ validate = (login) => {
 
     return Joi.validate(login, schema);
 }
+
+getToken = (value) => {
+    const token = jwt.sign({_id: value._id, isAdmin: value.isAdmin}, config.get("myKey") );
+    return token;
+};
 
 
 module.exports = router;
